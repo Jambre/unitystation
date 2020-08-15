@@ -82,7 +82,7 @@ public class CameraZoomHandler : MonoBehaviour
 
 	bool MouseOutside()
 	{
-		var view = Camera.main.ScreenToViewportPoint(Input.mousePosition);
+		var view = Camera.main.ScreenToViewportPoint(CommonInput.mousePosition);
 		return view.x < 0 || view.x > 1 || view.y < 0 || view.y > 1;
 	}
 
@@ -96,9 +96,9 @@ public class CameraZoomHandler : MonoBehaviour
 
 		pixelPerfectCamera.assetsPPU = displaySettings.ZoomLevel;
 
-		if (Camera2DFollow.followControl != null)
+		if (Camera2DFollow.Instance != null)
 		{
-			Camera2DFollow.followControl.SetCameraXOffset();
+			Camera2DFollow.Instance.SetCameraXOffset();
 		}
 	}
 

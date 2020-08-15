@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Mirror;
+using ScriptableObjects;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -17,7 +18,7 @@ public class StatusDisplay : NetworkBehaviour, IServerLifecycle, ICheckedInterac
 	private Coroutine blinkHandle;
 
 	[SerializeField]
-	private Text textField;
+	private Text textField = default;
 
 	[SyncVar(hook = nameof(SyncSprite))] public MountedMonitorState stateSync;
 	[SyncVar(hook = nameof(SyncStatusText))] private string statusText = string.Empty;
@@ -28,7 +29,7 @@ public class StatusDisplay : NetworkBehaviour, IServerLifecycle, ICheckedInterac
 	public Sprite openEmpty;
 	public Sprite openCabled;
 	public Sprite closedOff;
-	public SpriteSheetAndData joeNews;
+	public SpriteDataSO joeNews;
 	public List<DoorController> doorControllers = new List<DoorController>();
 	public CentComm centComm;
 	public int currentTimerSeconds;
@@ -268,7 +269,6 @@ public class StatusDisplay : NetworkBehaviour, IServerLifecycle, ICheckedInterac
 		this.StartCoroutine( BlinkText(), ref blinkHandle);
 	}
 
-
 	private void OnTextBroadcastReceived(StatusDisplayChannel broadcastedChannel)
 	{
 		if (broadcastedChannel == StatusDisplayChannel.DoorTimer)
@@ -365,7 +365,7 @@ public class StatusDisplay : NetworkBehaviour, IServerLifecycle, ICheckedInterac
 			DisplaySpriteHandler.SetSprite(null);
 		}else if (stateNew == MountedMonitorState.Image)
 		{
-			DisplaySpriteHandler.SetSprite(joeNews, 0);
+			DisplaySpriteHandler.SetSpriteSO(joeNews);
 			this.TryStopCoroutine( ref blinkHandle );
 			textField.text = "";
 		}

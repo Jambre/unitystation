@@ -6,10 +6,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 
-public class CargoManager : MonoBehaviour
+public class CargoManager : MonoBehaviourSingleton<CargoManager>
 {
-	public static CargoManager Instance;
-
 	public int Credits;
 	public ShuttleStatus ShuttleStatus = ShuttleStatus.DockedStation;
 	public float CurrentFlyTime = 0f;
@@ -37,18 +35,6 @@ public class CargoManager : MonoBehaviour
 
 	private Dictionary<string, ExportedItem> exportedItems = new Dictionary<string, ExportedItem>();
 
-	private void Awake()
-	{
-		if (Instance == null)
-		{
-			Instance = this;
-		}
-		else
-		{
-			Destroy(this);
-		}
-	}
-
 	private void OnEnable()
 	{
 		SceneManager.activeSceneChanged += OnRoundRestart;
@@ -57,6 +43,25 @@ public class CargoManager : MonoBehaviour
 	private void OnDisable()
 	{
 		SceneManager.activeSceneChanged -= OnRoundRestart;
+	}
+
+	/// <summary>
+	/// Checks for any Lifeforms (dead or alive) that might be aboard the shuttle
+	/// </summary>
+	/// <returns>true if a lifeform is found, false if none is found</returns>
+	bool CheckLifeforms()
+	{
+		LayerMask layersToCheck = LayerMask.GetMask("Players", "NPC");
+		Transform ObjectHolder = CargoShuttle.Instance.SearchForObjectsOnShuttle();
+		foreach (Transform child in ObjectHolder)
+		{
+			if(((1<<child.gameObject.layer) & layersToCheck) == 0)
+			{
+				continue;
+			}
+			return true;
+		}
+		return false;
 	}
 
 	void OnRoundRestart(Scene oldScene, Scene newScene)
@@ -99,16 +104,31 @@ public class CargoManager : MonoBehaviour
 				CentcomMessage += "Shuttle is sent back with goods." + "\n";
 				StartCoroutine(Timer(true));
 			}
-			//If we are at station - we start timer and launch shuttle at the same time.
+
+			//If we are at station - First checks for any people or animals aboard
+			//If any, refuses to depart until the lifeform is removed.
+			//If none, we start timer and launch shuttle at the same time.
 			//Once shuttle arrives centcomDest - CargoShuttle will wait till timer is done
 			//and will call OnShuttleArrival()
 			else if (ShuttleStatus == ShuttleStatus.DockedStation)
 			{
-				CargoShuttle.Instance.MoveToCentcom();
-				ShuttleStatus = ShuttleStatus.OnRouteCentcom;
-				CentcomMessage = "";
-				exportedItems.Clear();
-				StartCoroutine(Timer(false));
+				string warningMessageEnd = "organisms aboard." + "\n";
+				if (CheckLifeforms())
+				{
+					CurrentFlyTime = 0;
+					if (CentcomMessage.EndsWith(warningMessageEnd) == false)
+					{
+						CentcomMessage += "Due to safety and security reasons, the automatic cargo shuttle is unable to depart with any human, alien or animal organisms aboard." + "\n";
+					}
+				}
+				else
+				{
+					CargoShuttle.Instance.MoveToCentcom();
+					ShuttleStatus = ShuttleStatus.OnRouteCentcom;
+					CentcomMessage = "";
+					exportedItems.Clear();
+					StartCoroutine(Timer(false));
+				}
 			}
 		}
 

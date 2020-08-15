@@ -10,23 +10,8 @@ using DatabaseAPI;
 /// Use the public methods for anything related
 /// to chat stream
 /// </summary>
-public partial class Chat : MonoBehaviour
+public partial class Chat : MonoBehaviourSingleton<Chat>
 {
-	private static Chat chat;
-
-	public static Chat Instance
-	{
-		get
-		{
-			if (chat == null)
-			{
-				chat = FindObjectOfType<Chat>();
-			}
-
-			return chat;
-		}
-	}
-
 	//Connections to scene based ChatRelay. This is null if in the lobby
 	private ChatRelay chatRelay;
 	private Action<ChatEvent> addChatLogServer;
@@ -416,7 +401,7 @@ public partial class Chat : MonoBehaviour
 	/// <param name="message">The message to show in the chat stream</param>
 	/// <param name="worldPos">The position of the local message</param>
 	/// <param name="originator">The object (i.e. vending machine) that said message</param>
-	public static void AddLocalMsgToChat(string message, Vector2 worldPos, GameObject originator)
+	public static void AddLocalMsgToChat(string message, Vector2 worldPos, GameObject originator, string speakerName = null)
 	{
 		if (!IsServer()) return;
 		Instance.TryStopCoroutine(ref composeMessageHandle);
@@ -426,7 +411,8 @@ public partial class Chat : MonoBehaviour
 			channels = ChatChannel.Local,
 			message = message,
 			position = worldPos,
-			originator = originator
+			originator = originator,
+			speaker = speakerName
 		});
 	}
 

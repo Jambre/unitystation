@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,9 +13,8 @@ using DiscordWebhook;
 using Mirror;
 using GameConfig;
 
-public partial class GameManager : MonoBehaviour
+public partial class GameManager : MonoBehaviourSingleton<GameManager>
 {
-	public static GameManager Instance;
 	public bool counting;
 	/// <summary>
 	/// The minimum number of players needed to start the pre-round countdown
@@ -57,6 +56,16 @@ public partial class GameManager : MonoBehaviour
 	public bool RespawnAllowed { get; set; }
 
 	/// <summary>
+	/// True if the server allows gibbing people when they receive enough post-mortem damage.
+	/// </summary>
+	public bool GibbingAllowed { get; set; }
+
+	/// <summary>
+	/// If true, it will allow shuttles from dealing 9001 damage and instantly gibbing people when crashed
+	/// </summary>
+	public bool ShuttleGibbingAllowed { get; set; }
+
+	/// <summary>
 	/// The game mode that the server will switch to at round end if no mode or an invalid mode is selected.
 	/// <summary>
 	public string InitialGameMode { get; set; } = "Random";
@@ -96,21 +105,15 @@ public partial class GameManager : MonoBehaviour
 
 	private const float QueueCheckTimeServer = 1f;
 
-	private void Awake()
+	public bool QuickLoad = false;
+
+	protected override void Awake()
 	{
-		if (Instance == null)
+		base.Awake();
+
+		if (SceneManager.GetActiveScene().name != "Lobby")
 		{
-			Instance = this;
-			//if loading directly to outpost station, need to call pre round start once CustomNetworkManager
-			//starts because no scene change occurs to trigger it
-			if (SceneManager.GetActiveScene().name != "Lobby")
-			{
-				loadedDirectlyToStation = true;
-			}
-		}
-		else
-		{
-			Destroy(this);
+			loadedDirectlyToStation = true;
 		}
 	}
 
@@ -149,6 +152,12 @@ public partial class GameManager : MonoBehaviour
 
 		if(GameConfigManager.GameConfig.ShuttleDepartTime != null)
 			ShuttleDepartTime = GameConfigManager.GameConfig.ShuttleDepartTime;
+
+		if (GameConfigManager.GameConfig.GibbingAllowed != null)
+			GibbingAllowed = GameConfigManager.GameConfig.GibbingAllowed;
+
+		if (GameConfigManager.GameConfig.ShuttleGibbingAllowed != null)
+			ShuttleGibbingAllowed = GameConfigManager.GameConfig.ShuttleGibbingAllowed;
 	}
 
 	private void OnEnable()
@@ -492,7 +501,7 @@ public partial class GameManager : MonoBehaviour
 
 		string msg = GameManager.Instance.SecretGameMode ? "Secret" : $"{GameManager.Instance.GameMode}";
 
-		string message = $"A new round is starting on {ServerData.ServerConfig.ServerName}.\nThe current gamemode is: {msg}\n";
+		string message = $"A new round is starting on {ServerData.ServerConfig.ServerName}.\nThe current gamemode is: {msg}\nThe current map is: {SubSceneManager.ServerChosenMainStation}\n";
 
 		var playerNumber = PlayerList.Instance.ConnectionCount > PlayerList.LastRoundPlayerCount
 			? PlayerList.Instance.ConnectionCount
@@ -531,6 +540,12 @@ public partial class GameManager : MonoBehaviour
 		for(var i = 1; i <= count; i++)
 		{
 			var player = SpawnPlayerRequestQueue.Peek();
+
+			if (player == null || player.JoinedViewer == null)
+			{
+				SpawnPlayerRequestQueue.Dequeue();
+				continue;
+			}
 
 			int slotsTaken = GameManager.Instance.GetOccupationsCount(player.RequestedOccupation.JobType);
 			int slotsMax = GameManager.Instance.GetOccupationMaxCount(player.RequestedOccupation.JobType);
@@ -656,6 +671,7 @@ public partial class GameManager : MonoBehaviour
 	IEnumerator ServerRoundRestart()
 	{
 		Logger.Log("Server restarting round now.", Category.Round);
+		Chat.AddGameWideSystemMsgToChat("The round is now restarting...");
 
 		//Notify all clients that the round has ended
 		ServerToClientEventsMsg.SendToAll(EVENT.RoundEnded);

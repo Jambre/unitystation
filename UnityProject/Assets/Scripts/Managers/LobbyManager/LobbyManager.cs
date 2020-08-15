@@ -4,26 +4,13 @@ using UnityEngine.UI;
 
 namespace Lobby
 {
-	public class LobbyManager : MonoBehaviour
+	public class LobbyManager : MonoBehaviourSingleton<LobbyManager>
 	{
-		public static LobbyManager Instance;
 		public AccountLogin accountLogin;
 		public CharacterCustomization characterCustomization;
 		public Toggle hostToggle;
 
 		public GUI_LobbyDialogue lobbyDialogue;
-
-		void Awake()
-		{
-			if (Instance == null)
-			{
-				Instance = this;
-			}
-			else
-			{
-				Destroy(this);
-			}
-		}
 
 		void Start()
 		{
@@ -32,7 +19,7 @@ namespace Lobby
 			EventManager.AddHandler(EVENT.LoggedOut, SetOnLogOut);
 			CustomNetworkManager.Instance.OnClientDisconnected.AddListener(OnClientDisconnect);
 		}
-		
+
 		private void OnDisable()
 		{
 			EventManager.RemoveHandler(EVENT.LoggedOut, SetOnLogOut);
@@ -46,7 +33,15 @@ namespace Lobby
 
 		void DetermineUIScale()
 		{
-			if (!Application.isMobilePlatform)
+			if (Application.isMobilePlatform)
+			{
+				if (!UIManager.IsTablet)
+				{
+					characterCustomization.transform.localScale *= 1.25f;
+					lobbyDialogue.transform.localScale *= 2.0f;
+				}
+			}
+			else
 			{
 				if (Screen.height > 720f)
 				{

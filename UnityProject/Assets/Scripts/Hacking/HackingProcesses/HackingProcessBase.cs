@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using Mirror;
 using System.Collections.Generic;
+using ScriptableObjects.Hacking;
 using YamlDotNet.Samples;
 using UnityEngine.Events;
 
@@ -13,7 +14,7 @@ using UnityEngine.Events;
 /// e.g. check if interacted with a screw driver, then check if
 /// </summary>
 [RequireComponent(typeof(ItemStorage))]
-public abstract class HackingProcessBase : NetworkBehaviour, IPredictedCheckedInteractable<HandApply>, IServerSpawn, IServerDespawn
+public abstract class HackingProcessBase : NetworkBehaviour, IPredictedCheckedInteractable<HandApply>, IServerDespawn
 {
 	[SerializeField]
 	[Tooltip("Whether the wires used to hack the object are initially exposed when the object is spawned.")]
@@ -68,7 +69,7 @@ public abstract class HackingProcessBase : NetworkBehaviour, IPredictedCheckedIn
 		SyncWiresExposed(wiresExposed, wiresExposed);
 	}
 
-	public void OnSpawnServer(SpawnInfo info)
+	public override void OnStartServer()
 	{
 		itemStorage = GetComponent<ItemStorage>();
 		ServerGenerateNodesFromNodeInfo();

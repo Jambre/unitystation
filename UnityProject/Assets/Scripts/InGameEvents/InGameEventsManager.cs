@@ -13,11 +13,8 @@ namespace InGameEvents
 	/// <summary>
 	/// The controller for in game events
 	/// </summary>
-	public class InGameEventsManager : MonoBehaviour
+	public class InGameEventsManager : MonoBehaviourSingleton<InGameEventsManager>
 	{
-		private static InGameEventsManager instance;
-		public static InGameEventsManager Instance => instance;
-
 		private float timer = 0f;
 
 		/// <summary>
@@ -39,17 +36,9 @@ namespace InGameEvents
 		[HideInInspector]
 		public List<string> EnumListCache = new List<string>();
 
-
-		private void Awake()
+		protected override void Awake()
 		{
-			if (instance == null)
-			{
-				instance = this;
-			}
-			else
-			{
-				Destroy(this);
-			}
+			base.Awake();
 
 			EnumListCache = Enum.GetNames(typeof(InGameEventType)).ToList();
 		}
@@ -102,9 +91,12 @@ namespace InGameEvents
 			if (list == null)
 			{
 				Debug.LogError("An event has been set to random type, random is a dummy type and cant be accessed.");
+				return;
 			}
 
-			list?.Add(eventToAdd);
+			if (list.Contains(eventToAdd)) return;
+
+			list.Add(eventToAdd);
 		}
 
 		public void TriggerSpecificEvent(int eventIndex, InGameEventType eventType, bool isFake = false, string adminName = null, bool announceEvent = true)
@@ -213,6 +205,25 @@ namespace InGameEvents
 				case InGameEventType.Debug:
 					return ListOfDebugEventScripts;
 				default: return null;
+			}
+		}
+
+		public void RemoveEventFromList(EventScriptBase eventToRemove, InGameEventType enumValue)
+		{
+			switch (enumValue)
+			{
+				case InGameEventType.Fun:
+					ListOfFunEventScripts.Remove(eventToRemove);
+					return;
+				case InGameEventType.Special:
+					ListOfSpecialEventScripts.Remove(eventToRemove);
+					return;
+				case InGameEventType.Antagonist:
+					ListOfAntagonistEventScripts.Remove(eventToRemove);
+					return;
+				case InGameEventType.Debug:
+					ListOfDebugEventScripts.Remove(eventToRemove);
+					return;
 			}
 		}
 
